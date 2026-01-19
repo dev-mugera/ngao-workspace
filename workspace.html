@@ -1793,8 +1793,8 @@
                 this.init();
             }
 
-            async init() {
-                // Check authentication
+           async init() {
+                // Check authentication FIRST
                 this.auth.onAuthStateChanged(async (user) => {
                     if (user) {
                         this.currentUser = user;
