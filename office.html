@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace with Native Sheets Demo</title>
+    
+    <!-- Luckysheet CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/css/pluginsCss.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/plugins.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet/dist/css/luckysheet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet/dist/assets/iconfont/iconfont.css" />
+    
+    <!-- Yjs for real-time collaboration -->
+    <script src="https://cdn.jsdelivr.net/npm/y-websocket/bin/y-websocket.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        /* Workspace Container */
+        .workspace-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #e1e5e9;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+        }
+
+        .logo {
+            padding: 24px;
+            border-bottom: 1px solid #e1e5e9;
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a73e8;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+        }
+
+        .nav-section {
+            padding: 20px 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .nav-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #5f6368;
+            margin-bottom: 12px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #5f6368;
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background: #f8f9fa;
+        }
+
+        .nav-item.active {
+            background: #e8f0fe;
+            color: #1a73e8;
+            font-weight: 500;
+        }
+
+        .nav-icon {
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .sheets-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .sheet-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .sheet-item:hover {
+            background: #f8f9fa;
+        }
+
+        .sheet-item.active {
+            background: #e8f0fe;
+            border-color: #1a73e8;
+        }
+
+        .sheet-icon {
+            margin-right: 12px;
+            color: #34a853;
+            font-size: 20px;
+        }
+
+        .new-sheet-btn {
+            margin: 16px;
+            padding: 12px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .new-sheet-btn:hover {
+            background: #0d62d9;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: white;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e1e5e9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .sheet-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .sheet-title {
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .sheet-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #5f6368;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #34a853;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toolbar-btn {
+            padding: 8px 16px;
+            border: 1px solid #dadce0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: #f8f9fa;
+            border-color: #c2c7cc;
+        }
+
+        .toolbar-btn.primary {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+
+        .toolbar-btn.primary:hover {
+            background: #0d62d9;
+        }
+
+        .toolbar-btn.danger {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+
+        .toolbar-btn.danger:hover {
+            background: #c82333;
+        }
+
+        /* Sheet Container */
+        .sheet-container {
+            flex: 1;
+            overflow: hidden;
+            padding: 24px;
+            background: #f5f7fa;
+        }
+
+        #luckysheet-container {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 1px solid #e1e5e9;
+        }
+
+        /* Demo Controls */
+        .demo-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border: 1px solid #e1e5e9;
+            width: 320px;
+            z-index: 1000;
+        }
+
+        .demo-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1a73e8;
+        }
+
+        .demo-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .demo-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #dadce0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            text-align: center;
+            transition: all 0.2s;
+            min-width: 120px;
+        }
+
+        .demo-btn:hover {
+            background: #e9ecef;
+            border-color: #c2c7cc;
+        }
+
+        .demo-btn.blue {
+            background: #e8f0fe;
+            border-color: #1a73e8;
+            color: #1a73e8;
+        }
+
+        .demo-btn.green {
+            background: #e6f4ea;
+            border-color: #34a853;
+            color: #34a853;
+        }
+
+        .status-panel {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .status-value {
+            font-weight: 500;
+            color: #1a73e8;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .workspace-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 60vh;
+            }
+            .demo-controls {
+                position: static;
+                width: auto;
+                margin: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="workspace-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <span class="logo-icon">📊</span>
+                Workspace Pro
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-title">Workspace</div>
+                <a href="#" class="nav-item active">
+                    <span class="nav-icon">📈</span>
+                    Sheets
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    Tasks
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon">🗂️</span>
+                    Projects
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon">👥</span>
+                    Team
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-title">My Sheets</div>
+                <div class="sheets-list">
+                    <div class="sheet-item active">
+                        <span class="sheet-icon">📊</span>
+                        <div>
+                            <div>Q4 Financial Report</div>
+                            <div style="font-size: 12px; color: #5f6368;">Updated 2 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="sheet-item">
+                        <span class="sheet-icon">📊</span>
+                        <div>
+                            <div>Project Timeline</div>
+                            <div style="font-size: 12px; color: #5f6368;">Updated yesterday</div>
+                        </div>
+                    </div>
+                    <div class="sheet-item">
+                        <span class="sheet-icon">📊</span>
+                        <div>
+                            <div>Customer Database</div>
+                            <div style="font-size: 12px; color: #5f6368;">Updated 3 days ago</div>
+                        </div>
+                    </div>
+                    <div class="sheet-item">
+                        <span class="sheet-icon">📊</span>
+                        <div>
+                            <div>Inventory Management</div>
+                            <div style="font-size: 12px; color: #5f6368;">Updated 1 week ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="new-sheet-btn" onclick="createNewSheet()">
+                <span>+</span>
+                New Sheet
+            </button>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="sheet-info">
+                    <div class="sheet-title">Q4 Financial Report</div>
+                    <div class="sheet-status">
+                        <div class="status-dot"></div>
+                        <span>Saved • Real-time collaboration ready</span>
+                    </div>
+                </div>
+                
+                <div class="toolbar">
+                    <button class="toolbar-btn" onclick="saveSheet()">
+                        💾 Save
+                    </button>
+                    <button class="toolbar-btn" onclick="exportToExcel()">
+                        📥 Export to Excel
+                    </button>
+                    <button class="toolbar-btn primary" onclick="shareSheet()">
+                        👥 Share
+                    </button>
+                    <button class="toolbar-btn danger" onclick="showMigrationTool()">
+                        🔄 Import from Google Sheets
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Sheet Container -->
+            <div class="sheet-container">
+                <div id="luckysheet-container"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Demo Controls Panel -->
+    <div class="demo-controls">
+        <div class="demo-title">🧪 Demo Controls</div>
+        <div class="demo-buttons">
+            <button class="demo-btn blue" onclick="loadSampleData()">
+                📊 Load Sample Data
+            </button>
+            <button class="demo-btn" onclick="clearSheet()">
+                🧹 Clear Sheet
+            </button>
+            <button class="demo-btn green" onclick="addFormula()">
+                ∑ Add Formula Example
+            </button>
+            <button class="demo-btn" onclick="testRealTime()">
+                ⚡ Test Real-time (open new tab)
+            </button>
+        </div>
+        
+        <div class="status-panel">
+            <div class="status-item">
+                <span>Sheet Status:</span>
+                <span class="status-value" id="sheetStatus">Ready</span>
+            </div>
+            <div class="status-item">
+                <span>Cell Count:</span>
+                <span class="status-value" id="cellCount">0</span>
+            </div>
+            <div class="status-item">
+                <span>Last Saved:</span>
+                <span class="status-value" id="lastSaved">Never</span>
+            </div>
+            <div class="status-item">
+                <span>Real-time Users:</span>
+                <span class="status-value" id="userCount">1</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Luckysheet Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/js/plugin.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luckysheet/dist/luckysheet.umd.js"></script>
+    
+    <script>
+        // Initialize Luckysheet
+        let sheetInstance = null;
+        
+        function initLuckysheet() {
+            const options = {
+                container: 'luckysheet-container',
+                title: 'Q4 Financial Report',
+                lang: 'en',
+                allowEdit: true,
+                showinfobar: true,
+                showsheetbar: true,
+                showtoolbar: true,
+                showstatisticBar: true,
+                showstatisticBarConfig: {
+                    count: true,
+                    view: true,
+                    zoom: true,
+                },
+                data: [{
+                    name: 'Sheet1',
+                    color: '',
+                    index: 0,
+                    status: 1,
+                    order: 0,
+                    celldata: [],
+                    config: {},
+                    column: 18,
+                    row: 40
+                }],
+                plugins: ['chart']
+            };
+            
+            sheetInstance = luckysheet.create(options);
+            
+            // Load sample data after initialization
+            setTimeout(loadSampleData, 500);
+            updateSheetStats();
+        }
+        
+        // Demo Functions
+        function loadSampleData() {
+            if (!sheetInstance) return;
+            
+            const data = [
+                { r: 0, c: 0, v: { v: 'Q4 2023 Financial Report', m: 'Q4 2023 Financial Report', ct: { fa: "General", t: "g" }, bg: '#4caf50', fs: 16, bl: 1 } },
+                { r: 0, c: 1, v: { v: '', m: '', ct: { fa: "General", t: "g" } } },
+                { r: 0, c: 2, v: { v: '', m: '', ct: { fa: "General", t: "g" } } },
+                { r: 0, c: 3, v: { v: '', m: '', ct: { fa: "General", t: "g" } } },
+                
+                { r: 2, c: 0, v: { v: 'Revenue Streams', m: 'Revenue Streams', ct: { fa: "General", t: "g" }, fs: 14, bl: 1, bg: '#e3f2fd' } },
+                { r: 2, c: 1, v: { v: 'October', m: 'October', ct: { fa: "General", t: "g" }, fs: 14, bl: 1 } },
+                { r: 2, c: 2, v: { v: 'November', m: 'November', ct: { fa: "General", t: "g" }, fs: 14, bl: 1 } },
+                { r: 2, c: 3, v: { v: 'December', m: 'December', ct: { fa: "General", t: "g" }, fs: 14, bl: 1 } },
+                { r: 2, c: 4, v: { v: 'Q4 Total', m: 'Q4 Total', ct: { fa: "General", t: "g" }, fs: 14, bl: 1, bg: '#fff3e0' } },
+                
+                { r: 3, c: 0, v: { v: 'Product Sales', m: 'Product Sales', ct: { fa: "General", t: "g" } } },
+                { r: 3, c: 1, v: { v: 125000, m: '125000', ct: { fa: "#,##0", t: "n" } } },
+                { r: 3, c: 2, v: { v: 145000, m: '145000', ct: { fa: "#,##0", t: "n" } } },
+                { r: 3, c: 3, v: { v: 185000, m: '185000', ct: { fa: "#,##0", t: "n" } } },
+                { r: 3, c: 4, v: { v: { f: 'SUM(B4:D4)', v: 455000 }, m: '455000', ct: { fa: "#,##0", t: "n" }, bg: '#fff3e0' } },
+                
+                { r: 4, c: 0, v: { v: 'Services', m: 'Services', ct: { fa: "General", t: "g" } } },
+                { r: 4, c: 1, v: { v: 85000, m: '85000', ct: { fa: "#,##0", t: "n" } } },
+                { r: 4, c: 2, v: { v: 92000, m: '92000', ct: { fa: "#,##0", t: "n" } } },
+                { r: 4, c: 3, v: { v: 110000, m: '110000', ct: { fa: "#,##0", t: "n" } } },
+                { r: 4, c: 4, v: { v: { f: 'SUM(B5:D5)', v: 287000 }, m: '287000', ct: { fa: "#,##0", t: "n" }, bg: '#fff3e0' } },
+                
+                { r: 5, c: 0, v: { v: 'Subscriptions', m: 'Subscriptions', ct: { fa: "General", t: "g" } } },
+                { r: 5, c: 1, v: { v: 42000, m: '42000', ct: { fa: "#,##0", t: "n" } } },
+                { r: 5, c: 2, v: { v: 45000, m: '45000', ct: { fa: "#,##0", t: "n" } } },
+                { r: 5, c: 3, v: { v: 48000, m: '48000', ct: { fa: "#,##0", t: "n" } } },
+                { r: 5, c: 4, v: { v: { f: 'SUM(B6:D6)', v: 135000 }, m: '135000', ct: { fa: "#,##0", t: "n" }, bg: '#fff3e0' } },
+                
+                { r: 7, c: 0, v: { v: 'TOTAL REVENUE', m: 'TOTAL REVENUE', ct: { fa: "General", t: "g" }, fs: 14, bl: 1, bg: '#e8f5e9' } },
+                { r: 7, c: 1, v: { v: { f: 'SUM(B4:B6)', v: 252000 }, m: '252000', ct: { fa: "#,##0", t: "n" }, bg: '#e8f5e9' } },
+                { r: 7, c: 2, v: { v: { f: 'SUM(C4:C6)', v: 282000 }, m: '282000', ct: { fa: "#,##0", t: "n" }, bg: '#e8f5e9' } },
+                { r: 7, c: 3, v: { v: { f: 'SUM(D4:D6)', v: 343000 }, m: '343000', ct: { fa: "#,##0", t: "n" }, bg: '#e8f5e9' } },
+                { r: 7, c: 4, v: { v: { f: 'SUM(B8:D8)', v: 877000 }, m: '877000', ct: { fa: "#,##0", t: "n" }, fs: 14, bl: 1, bg: '#c8e6c9' } },
+                
+                { r: 10, c: 0, v: { v: 'Expenses', m: 'Expenses', ct: { fa: "General", t: "g" }, fs: 14, bl: 1, bg: '#ffebee' } },
+                { r: 11, c: 0, v: { v: 'Marketing', m: 'Marketing', ct: { fa: "General", t: "g" } } },
+                { r: 11, c: 1, v: { v: 25000, m: '25000', ct: { fa: "#,##0", t: "n" } } },
+                { r: 11, c: 2, v: { v: 28000, m: '28000', ct: { fa: "#,##0", t: "n" } } },
+                { r: 11, c: 3, v: { v: 32000, m: '32000', ct: { fa: "#,##0", t: "n" } } },
+                
+                { r: 14, c: 0, v: { v: 'Profit Margin %', m: 'Profit Margin %', ct: { fa: "General", t: "g" }, fs: 14, bl: 1, bg: '#f3e5f5' } },
+                { r: 14, c: 4, v: { v: { f: '(E8-SUM(E12:E13))/E8', v: 0.42 }, m: '42%', ct: { fa: "0.00%", t: "n" }, fs: 14, bl: 1, bg: '#e1bee7' } },
+            ];
+            
+            luckysheet.setSheetData(data, 'Sheet1');
+            
+            // Set column widths
+            luckysheet.setColumnWidth(0, 120, 'Sheet1');
+            
+            document.getElementById('sheetStatus').textContent = 'Sample Data Loaded';
+            document.getElementById('sheetStatus').style.color = '#34a853';
+            updateSheetStats();
+            
+            setTimeout(() => {
+                document.getElementById('lastSaved').textContent = new Date().toLocaleTimeString();
+            }, 1000);
+        }
+        
+        function clearSheet() {
+            if (!sheetInstance) return;
+            
+            if (confirm('Clear all data from the sheet?')) {
+                const emptyData = [];
+                luckysheet.setSheetData(emptyData, 'Sheet1');
+                
+                document.getElementById('sheetStatus').textContent = 'Sheet Cleared';
+                document.getElementById('sheetStatus').style.color = '#dc3545';
+                updateSheetStats();
+            }
+        }
+        
+        function addFormula() {
+            if (!sheetInstance) return;
+            
+            // Add a formula example
+            const formulaData = [
+                { r: 16, c: 0, v: { v: 'Average Monthly Revenue', m: 'Average Monthly Revenue', ct: { fa: "General", t: "g" }, fs: 12, bl: 1 } },
+                { r: 16, c: 4, v: { v: { f: 'AVERAGE(B8:D8)', v: 292333.33 }, m: '292,333', ct: { fa: "#,##0", t: "n" }, bg: '#e3f2fd' } },
+                
+                { r: 17, c: 0, v: { v: 'Growth Rate (Dec vs Oct)', m: 'Growth Rate (Dec vs Oct)', ct: { fa: "General", t: "g" }, fs: 12, bl: 1 } },
+                { r: 17, c: 4, v: { v: { f: '(D8-B8)/B8', v: 0.3611 }, m: '36.11%', ct: { fa: "0.00%", t: "n" }, bg: '#e8f5e9' } },
+            ];
+            
+            luckysheet.setSheetData(formulaData, 'Sheet1');
+            
+            document.getElementById('sheetStatus').textContent = 'Formulas Added';
+            document.getElementById('sheetStatus').style.color = '#1a73e8';
+            updateSheetStats();
+        }
+        
+        function createNewSheet() {
+            const sheetName = prompt('Enter new sheet name:', 'Untitled Sheet');
+            if (sheetName) {
+                luckysheet.createSheet({
+                    name: sheetName,
+                    color: '#4caf50',
+                    status: 1,
+                    order: luckysheet.getAllSheets().length,
+                    data: []
+                });
+                
+                document.getElementById('sheetStatus').textContent = 'New Sheet Created';
+                updateSheetStats();
+            }
+        }
+        
+        function saveSheet() {
+            // Simulate saving
+            const sheetData = luckysheet.getAllSheets();
+            console.log('Saving sheet data:', sheetData);
+            
+            document.getElementById('sheetStatus').textContent = 'Saving...';
+            document.getElementById('sheetStatus').style.color = '#ff9800';
+            
+            setTimeout(() => {
+                document.getElementById('sheetStatus').textContent = 'Saved Successfully';
+                document.getElementById('sheetStatus').style.color = '#34a853';
+                document.getElementById('lastSaved').textContent = new Date().toLocaleTimeString();
+                updateSheetStats();
+            }, 800);
+        }
+        
+        function exportToExcel() {
+            alert('Export to Excel functionality would be implemented using SheetJS library.\nIn production, this would download an .xlsx file.');
+            document.getElementById('sheetStatus').textContent = 'Exporting to Excel...';
+        }
+        
+        function shareSheet() {
+            const shareUrl = window.location.href + '?collab=true';
+            prompt('Share this link for real-time collaboration:', shareUrl);
+        }
+        
+        function showMigrationTool() {
+            alert('Google Sheets Migration Tool\n\nThis would:\n1. Connect to Google Sheets API\n2. List your spreadsheets\n3. Convert formulas & formatting\n4. Import into native sheets\n\nDemo: Simulating import...');
+            
+            // Simulate import
+            setTimeout(() => {
+                loadSampleData();
+                document.getElementById('sheetStatus').textContent = 'Google Sheets Import Complete';
+            }, 1500);
+        }
+        
+        function testRealTime() {
+            // Open new tab to simulate multi-user
+            window.open(window.location.href + '?user=2', '_blank');
+            document.getElementById('userCount').textContent = '2';
+            document.getElementById('sheetStatus').textContent = 'Real-time enabled (test in new tab)';
+        }
+        
+        function updateSheetStats() {
+            if (!sheetInstance) return;
+            
+            try {
+                const sheets = luckysheet.getAllSheets();
+                let totalCells = 0;
+                
+                sheets.forEach(sheet => {
+                    if (sheet.data && sheet.data.length > 0) {
+                        totalCells += sheet.data.length;
+                    }
+                });
+                
+                document.getElementById('cellCount').textContent = totalCells.toLocaleString();
+            } catch (e) {
+                console.log('Error updating stats:', e);
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            // Load Luckysheet scripts dynamically
+            const script1 = document.createElement('script');
+            script1.src = 'https://cdn.jsdelivr.net/npm/luckysheet/dist/plugins/js/plugin.js';
+            script1.onload = function() {
+                const script2 = document.createElement('script');
+                script2.src = 'https://cdn.jsdelivr.net/npm/luckysheet/dist/luckysheet.umd.js';
+                script2.onload = initLuckysheet;
+                document.head.appendChild(script2);
+            };
+            document.head.appendChild(script1);
+        });
+        
+        // Update stats periodically
+        setInterval(updateSheetStats, 2000);
+        
+        // Simulate user count changes (for demo)
+        setInterval(() => {
+            const count = parseInt(document.getElementById('userCount').textContent);
+            if (Math.random() > 0.7 && count < 5) {
+                document.getElementById('userCount').textContent = (count + 1).toString();
+            } else if (Math.random() > 0.9 && count > 1) {
+                document.getElementById('userCount').textContent = (count - 1).toString();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
